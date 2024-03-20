@@ -2,6 +2,7 @@
 //Сделал: Ошлаков Данил, ИВТ-22
 #include <sstream>
 #include <iostream>
+#include <cassert>
 
 
 using namespace std;
@@ -30,9 +31,9 @@ public:
     ~Node() {
         // Удаляем указатели на предыдущий и следующий узлы
         if (n_prev != nullptr)
-        delete n_prev;
+        n_prev = nullptr;
         if (n_next != nullptr)
-        delete n_next;
+        n_next = nullptr;
     }
     //Конструктор копирования :
 
@@ -142,7 +143,12 @@ private:
 public:
     //--------------------------------------------------------------------КОНСТРУКТОРЫ И ОПЕРАТОРЫ ИЗ ПРАВИЛА ПЯТИ------------------------------------------------------
     // Конструктор по умолчанию.
-    ListLegacy() : l_head(nullptr), l_tail(nullptr), l_size(0) {}
+    ListLegacy()
+    {
+        l_head = nullptr;
+        l_tail = nullptr;
+        l_size = 0;
+    }
     // Конструктор, заполняющий список n элементами с значением value.
     ListLegacy(size_t n, const T& value) {
         for (size_t i = 0; i < n; i++) {
@@ -152,14 +158,20 @@ public:
 
 
     // Конструктор копирования.
-    ListLegacy(const ListLegacy& other) : l_head(nullptr), l_tail(nullptr), l_size(0) {
+    ListLegacy(const ListLegacy& other){
+        l_head = nullptr;
+        l_tail = nullptr;
+        l_size = 0;
         // Копируем элементы из другого списка.
         copy(other);
     }
 
     // Конструктор перемещения.
-    ListLegacy(ListLegacy&& other) : l_head(other.l_head), l_tail(other.l_tail), l_size(other.size) {
+    ListLegacy(ListLegacy&& other){
         // Перемещаем элементы из другого списка.
+        l_head = other.l_head;
+        l_tail = other.l_tail;
+        l_size = other.l_size;
         other.forget();
     }
 
@@ -352,9 +364,10 @@ public:
         l_size++;
 
     }
-    //Вставить элемент на index, сдвигая остальные элементы
+    //Вставить элемент после index, сдвигая остальные элементы
     void insert(size_t index, const T& data) {
-        if (index < 0 || index > l_size) {
+        if (index > l_size) {
+            throw out_of_range("Invalid index");
             return;
         }
 
@@ -812,3 +825,138 @@ public:
         return false;
     }
 };
+//Тестирование класса
+void test()
+{
+    // Конструктор по умолчанию
+    ListLegacy<int> list1;
+    assert(list1.is_empty());
+    assert(list1.size() == 0);
+
+    // Конструктор, заполняющий список n элементами с значением value
+    ListLegacy<int> list2(5, 10);
+    assert(!list2.is_empty());
+    assert(list2.size() == 5);
+    for (int i = 0; i < 5; i++) {
+        assert(list2[i] == 10);
+    }
+
+    // Конструктор копирования
+    ListLegacy<int> list3(list2);
+    assert(!list3.is_empty());
+    assert(list3.size() == 5);
+    for (int i = 0; i < 5; i++) {
+        assert(list3[i] == 10);
+    }
+
+    // Конструктор перемещения
+    ListLegacy<int> list4(std::move(list2));
+    assert(list2.is_empty());
+    assert(list4.size() == 5);
+    for (int i = 0; i < 5; i++) {
+        assert(list4[i] == 10);
+    }
+
+    // Оператор присваивания копированием
+    list1 = list3;
+    assert(!list1.is_empty());
+    assert(list1.size() == 5);
+    for (int i = 0; i < 5; i++) {
+        assert(list1[i] == 10);
+    }
+
+    // Оператор присваивания перемещением
+    list1 = std::move(list3);
+    assert(list3.is_empty());
+    assert(list1.size() == 5);
+    for (int i = 0; i < 5; i++) {
+        assert(list1[i] == 10);
+    }
+
+    // Конструктор, который создает список из инициализатора
+    ListLegacy<int> list5{ 1, 2, 3, 4, 5 };
+    assert(!list5.is_empty());
+    assert(list5.size() == 5);
+    for (int i = 0; i < 5; i++) {
+        assert(list5[i] == i + 1);
+    }
+
+    // Деструктор
+    {
+        ListLegacy<int> list6;
+        list6.push_back(10);
+        list6.push_back(20);
+        list6.push_back(30);
+    } // list6 уничтожается здесь
+
+    // Добавление элемента в начало списка
+    list1.push_front(0);
+    assert(list1.size() == 6);
+    assert(list1[0] == 0);
+
+    // Добавление элемента в конец списка
+    list1.push_back(6);
+    assert(list1.size() == 7);
+    assert(list1[6] == 6);
+
+    // Удаление последнего элемента из списка
+    assert(list1.pop_back() == 6);
+    assert(list1.size() == 6);
+    assert(list1[5] == 10);
+
+    // Удаление первого элемента из списка
+    assert(list1.pop_front() == 0);
+    assert(list1.size() == 5);
+    assert(list1[0] == 10);
+
+    // Вставка нового узла, содержащего data, после указанного узла node
+    list1.push_front(2);
+    list1.insert_node(list1.find(2), 8);
+    assert(list1.size() == 7);
+    assert(list1[0] == 2);
+    assert(list1[1] == 8);
+
+    // Вставка элемента после index, сдвигая остальные элементы
+    list1.insert(3, 4);
+    assert(list1.size() == 8);
+    assert(list1[4] == 4);
+
+    // Вставка списка после узла index
+    ListLegacy<int> list6{ 6, 7, 8, 9, 10 };
+    list1.insert(5, list6);
+    assert(list1.size() == 13);
+
+    for (int i = 6; i < 10; i++) {
+        assert(list1[i] == i);
+    }
+
+    // Склеивание двух списков
+    ListLegacy<int> list7{ 13, 14, 15, 16, 17 };
+    list1.merge(list7);
+    assert(list1.size() == 18);
+    for (int i = 13; i < 18; i++) {
+        assert(list1[i] == i);
+    }
+
+    // Удаление указанного узла из списка
+    list1.remove(list1.find(2));
+    assert(list1.size() == 17);
+    assert(list1[0] == 8);
+    assert(list1[3] == 4);
+
+    // Удаление элемента по индексу
+    list1.delete_(3);
+    assert(list1.size() == 16);
+    assert(list1[3] == 10);
+    list1.print();
+
+    // Удаление n элементов после индекса
+    list1.delete_(5, 3);
+    assert(list1.size() == 13);
+    list1.print();
+    assert(list1[5] == 10);
+
+    // Нахождение узла со значением, равным data
+    assert(list1.find(10) == list1.get_node(1));
+    cout << "All tests passed!" << endl;
+}

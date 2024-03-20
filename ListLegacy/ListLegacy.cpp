@@ -6,6 +6,7 @@
 using namespace std;
 
 void main() {
+    test();
     ListLegacy<int> list1;
     list1.push_back(1);
     list1.push_back(2);
