@@ -1,5 +1,5 @@
 #pragma once
-
+//Сделал: Ошлаков Данил, ИВТ-22
 #include <sstream>
 #include <iostream>
 
@@ -26,16 +26,91 @@ public:
 
     // Конструктор, принимающий данные и указатели на предыдущий и следующий узлы.
     Node(const T& data, Node<T>* prev, Node<T>* next) : n_data(data), n_prev(prev), n_next(next) {}
+    //Деструктор:
+    ~Node() {
+        // Удаляем указатели на предыдущий и следующий узлы
+        if (n_prev != nullptr)
+        delete n_prev;
+        if (n_next != nullptr)
+        delete n_next;
+    }
+    //Конструктор копирования :
+
+    Node(const Node& other) : n_data(other.n_data), n_prev(nullptr), n_next(nullptr) {
+        // Копируем указатели на предыдущий и следующий узлы
+        if (other.n_prev != nullptr) {
+            n_prev = new Node(other.n_prev->n_data);
+        }
+        if (other.n_next != nullptr) {
+            n_next = new Node(other.n_next->n_data);
+        }
+    }
+
+
+    //Конструктор перемещения :
+
+    Node(Node&& other) : n_data(other.n_data), n_prev(other.n_prev), n_next(other.n_next) {
+        // Перемещаем указатели на предыдущий и следующий узлы
+        other.n_prev = nullptr;
+        other.n_next = nullptr;
+    }
+
+
+    //Оператор копирования :
+
+    Node & operator=(const Node& other) {
+        // Проверяем самоприсваивание
+        if (this == &other) {
+            return *this;
+        }
+
+        // Удаляем текущие указатели на предыдущий и следующий узлы
+        delete n_prev;
+        delete n_next;
+
+        // Копируем данные и указатели из другого узла
+        n_data = other.n_data;
+        if (other.n_prev != nullptr) {
+            n_prev = new Node(other.n_prev->n_data);
+        }
+        if (other.n_next != nullptr) {
+            n_next = new Node(other.n_next->n_data);
+        }
+
+        return *this;
+    }
+
+
+    //Оператор перемещения :
+
+    Node & operator=(Node&& other) {
+        // Проверяем самоприсваивание
+        if (this == &other) {
+            return *this;
+        }
+
+        // Перемещаем данные и указатели из другого узла
+        n_data = other.n_data;
+        n_prev = other.n_prev;
+        n_next = other.n_next;
+
+        // Очищаем указатели в перемещаемом узле
+        other.n_prev = nullptr;
+        other.n_next = nullptr;
+
+        return *this;
+    }
 };
 /*
 | Операция                       | Средняя сложность |
 |--------------------------------|------|
 | push_front                     | O(1) |
 | push_back                      | O(1) |
-| insert                         | O(1) |
+| insert(node)                   | O(1) |
+| insert (list, index)           | O(n) |
 | remove                         | O(1) |
-| delete_(size_t index)             | O(n) |
-| delete_     (size_t index, size_t n) | O(n) |
+| delete_(size_t index)          | O(n) |
+| delete_(size_t index, size_t n)| O(n) |
 | find                           | O(n) |
 | size                           | O(1) |
 | is_empty                       | O(1) |
@@ -251,7 +326,7 @@ public:
         return value;
     }
 
-    // Вставляет элемент после указанного узла.
+    // Вставляет новый узел, содержащий data, после указанного узла node.
     void insert_node(Node<T>* node, const T& data) {
         // Если указанный узел равен nullptr, то добавляем элемент в конец списка.
         if (node == nullptr) {
@@ -408,6 +483,7 @@ public:
             l_head = l_head->n_next;
             if (l_head != nullptr) {
                 l_head->n_prev = nullptr;
+                node->n_next = nullptr;
             }
             else {
                 l_tail = nullptr;
@@ -527,23 +603,6 @@ public:
         forget();
     }
 
-    //Указатель на начало списка
-    T& begin() {
-        if (l_head == nullptr) {
-            throw out_of_range("List is empty");
-        }
-
-        return l_head->n_data;
-    }
-
-    //Указатель на конец списка
-    T& end() {
-        if (l_tail == nullptr) {
-            throw out_of_range("List is empty");
-        }
-
-        return l_tail->n_data;
-    }
     //Инвертирует список
     void reverse() {
         Node<T>* current = l_head;
@@ -629,6 +688,7 @@ public:
             current = current->n_next;
         }
     }
+    //------------------------------------------------------------------------------------------------Геттеры и Сеттеры
     //Доступы к элементу по индексу
     T at(size_t index) const {
         if (index < 0 || index >= l_size) {
@@ -661,5 +721,94 @@ public:
     }
     const T operator[](size_t index) const {
         return at(index);
+    }
+    //Возвращает узел списка в index
+    Node<T>* get_node(size_t index) const {
+        if (index < 0 || index >= l_size) {
+            throw std::out_of_range("Index is out of range");
+        }
+
+        Node<T>* current = l_head;
+        for (size_t i = 0; i < index; i++) {
+            current = current->n_next;
+        }
+
+        return current;
+    }
+    //Устанавливает новый узел в index, удаляя старый
+    void set_node(size_t index, Node<T>* new_node) {
+        if (index < 0 || index >= l_size) {
+            throw std::out_of_range("Index is out of range");
+        }
+
+        Node<T>* current = l_head;
+        for (size_t i = 0; i < index; i++) {
+            current = current->n_next;
+        }
+        Node<T>* temp_prev = current->n_prev;
+        // Удаляем старый узел
+        remove(current);
+
+        // Вставляем новый узел
+        insert_node(temp_prev, new_node->n_data);
+    }
+
+    //Указатель на начало списка
+    T& begin() {
+        if (l_head == nullptr) {
+            throw out_of_range("List is empty");
+        }
+
+        return l_head->n_data;
+    }
+
+    //Указатель на конец списка
+    T& end() {
+        if (l_tail == nullptr) {
+            throw out_of_range("List is empty");
+        }
+
+        return l_tail->n_data;
+    }
+    //--------------------------------------------------------------------------------------------------------------------------------------
+    //Проверка на равенство списков
+    bool operator==(const ListLegacy<T>& other) const {
+        if (l_size != other.l_size) {
+            return false;
+        }
+
+        Node<T>* current1 = l_head;
+        Node<T>* current2 = other.l_head;
+
+        while (current1 != nullptr) {
+            if (current1->n_data != current2->n_data) {
+                return false;
+            }
+
+            current1 = current1->n_next;
+            current2 = current2->n_next;
+        }
+
+        return true;
+    }
+    //Проверка на неравенство списков
+    bool operator!=(const ListLegacy<T>& other) const {
+        if (l_size != other.l_size) {
+            return false;
+        }
+
+        Node<T>* current1 = l_head;
+        Node<T>* current2 = other.l_head;
+
+        while (current1 != nullptr) {
+            if (current1->n_data != current2->n_data) {
+                return true;
+            }
+
+            current1 = current1->n_next;
+            current2 = current2->n_next;
+        }
+
+        return false;
     }
 };
