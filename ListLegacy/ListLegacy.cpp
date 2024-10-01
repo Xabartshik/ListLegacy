@@ -6,7 +6,7 @@
 using namespace std;
 
 void main() {
-    test();
+    test_list();
     ListLegacy<int> list1;
     list1.push_back(1);
     list1.push_back(2);
@@ -17,7 +17,9 @@ void main() {
 
     // Создаем второй список
     ListLegacy<int> list2{1 , 2, 3};
-
+    for (int value : list2) {
+        std::cout << value << " ";
+    }
     list2.set_node(0, node);
     list1.print();
     list2.print();

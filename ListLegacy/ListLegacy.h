@@ -766,22 +766,63 @@ public:
         insert_node(temp_prev, new_node->n_data);
     }
 
-    //Указатель на начало списка
-    T& begin() {
-        if (l_head == nullptr) {
-            return T();
+    class Iterator {
+    private:
+        Node<T>* currentNode;
+
+    public:
+        Iterator(Node<T>* l_head)
+            : currentNode(l_head) {}
+
+        bool operator!=(const Iterator& other) const {
+            return currentNode != other.currentNode;
         }
 
-        return l_head->n_data;
+        bool hasNext() {
+            return currentNode != nullptr;
+        }
+
+        T& operator*() const {
+            return currentNode->n_data;
+        }
+
+        T& data() {
+            return currentNode->n_data;
+        }
+
+        Iterator& operator++() {
+            return next();
+        }
+
+        Iterator& next() {
+            if (!hasNext()) {
+                throw std::out_of_range("No more elements in the iterator");
+            }
+            currentNode = currentNode->n_next;
+            return *this;
+        }
+
+        void reset() {
+            currentNode = l_head; // assuming 'head' is the start of the list
+        }
+
+
+        Iterator& operator=(const Iterator& other) {
+            if (this != &other) {
+                currentNode = other.currentNode;
+            }
+            return *this;
+        }
+    };
+
+    Iterator begin() {
+        return Iterator(l_head);
     }
 
-    //Указатель на конец списка
-    T& end() {
-        if (l_tail == nullptr) {
-            return T();
-        }
-        return l_tail->n_data;
+    Iterator end() {
+        return Iterator(nullptr);
     }
+
 
     // Возвращает первый элемент списка
     T first() const{
